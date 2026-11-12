@@ -16,9 +16,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Clean old caches
+      - name: Clean old Buildozer cache
         run: |
-          rm -rf ~/.buildozer .buildozer
+          rm -rf ~/.buildozer
+          rm -rf .buildozer
 
       - name: Install system dependencies
         run: |
@@ -44,30 +45,19 @@ jobs:
           EOF
           SDKM=$(find $SDK -name sdkmanager -type f | head -1)
           if [ -n "$SDKM" ]; then yes | $SDKM --licenses || true; fi
+
       - name: Fix Autotools / Libtool issue for libffi
         run: |
-          # Находим директорию с исходниками libffi, которые качает Buildozer
-          LIBFFI_DIR=\$(find ~/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi -type d -name "libffi-*" | head -n 1)
-          
-          if [ -n "$LIBFFI_DIR" ] && [ -f "$LIBFFI_DIR/configure.ac" ]; then
-            echo "Found libffi source at: \$LIBFFI_DIR"
-            cd "\$LIBFFI_DIR"
-            
-            # 1. Запускаем libtoolize, чтобы создать недостающие макросы
+          LIBFFI_DIR=$(find ~/.buildozer -type f -path "*other_builds*libffi*" -name "configure.ac" | head -1 | xargs dirname)
+          if [ -n "$LIBFFI_DIR" ]; then
+            echo "Fixing libffi in: $LIBFFI_DIR"
+            cd "$LIBFFI_DIR"
             libtoolize --force --copy
-            
-            # 2. Запускаем autoupdate, чтобы убрать устаревшие макросы (вроде AC_TRY_LINK)
-            autoupdate
-            
-            # 3. Перегенерируем configure
             autoreconf -vfi
-            echo "Autotools fix applied successfully."
+            echo "Libffi fixed."
           else
-            echo "Warning: Could not find libffi source directory. Skipping fix."
+            echo "Libffi source not found, skipping fix."
           fi
-
-      - name: Build APK (final with fixed libffi)
-        run: buildozer -v android debug
 
       - name: Build APK (final)
         run: buildozer -v android debug
