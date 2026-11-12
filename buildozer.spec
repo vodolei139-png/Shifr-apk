@@ -1,19 +1,26 @@
 [app]
 title = Shifr
 package.name = shifr
-package.domain = org.shifr
+package.domain = org.vodolei
 source.dir = .
-source.include_exts = py,png,kv
+source.include_exts = py,png,jpg,kv,atlas
+orientation = portrait
 requirements = python3,kivy
-android.api = 34
+osx.python_version = 3
+osx.kivy_version = 1.9.1
+
+[android]
+android.api = 33
 android.minapi = 21
-android.ndk = 26b
-android.build_tools_version = 34.0.0
-version = 0.1
-log_level = 2
-warn_on_root = 1
-build_dir = ./.buildozer
-bin_dir = ./bin
+android.ndk = 25b
+android.sdk = 33
+android.ndk_version = 25b
+android.build_tools_version = 33.0.2
+p4a.source_dir = /home/runner/build/python-for-android
+p4a.branch = master
+android.arch = arm64-v8a
+android.gradle_dependencies = androidx.core:core:1.9.0
 
 [buildozer]
 log_level = 2
+warn_on_root = 1
