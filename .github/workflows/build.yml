@@ -35,7 +35,7 @@ jobs:
           mkdir -p $SDK_ROOT
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip
           unzip -q /tmp/tools.zip -d /tmp/tools_extract
-          cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
+          mkdir -p /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
 
       - name: Accept Licenses & Install Build Tools
