@@ -37,7 +37,13 @@ jobs:
           unzip -q /tmp/tools.zip -d /tmp/tools_extract
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
-
+    
+      - name: Patch pyjnius recipe (1.7.0 -> 1.8.0)
+        run: |
+          PIP_RECIPE=$(python -c "import pythonforandroid, os; print(os.path.join(os.path.dirname(pythonforandroid.__file__), 'recipes', 'pyjnius', '__init__.py'))")
+          sed -i 's/1\.7\.0/1.8.0/g' "$PIP_RECIPE"
+          grep -n "1.8.0" "$PIP_RECIPE" | head -3
+     
       - name: Accept Licenses & Install Build Tools
         run: |
           SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
