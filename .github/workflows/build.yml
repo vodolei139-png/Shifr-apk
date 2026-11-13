@@ -32,25 +32,25 @@ jobs:
 
       - name: Prepare Android SDK (Cmdline Tools)
         run: |
-          SDK_ROOT=\$HOME/.buildozer/android/platform/android-sdk
-          CMD_TOOLS_DIR=\$SDK_ROOT/cmdline-tools
-          mkdir -p \$CMD_TOOLS_DIR
+          SDK_ROOT=\HOME/.buildozer/android/platform/android-sdk
+          CMD_TOOLS_DIR=\SDK_ROOT/cmdline-tools
+          mkdir -p \CMD_TOOLS_DIR
           
           # Скачиваем свежие command line tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip
           unzip -q /tmp/tools.zip -d /tmp/tools_extract
-          mv /tmp/tools_extract/cmdline-tools \$CMD_TOOLS_DIR/latest
+          mv /tmp/tools_extract/cmdline-tools \CMD_TOOLS_DIR/latest
           
           # Создаем симлинк для совместимости со старыми скриптами, если потребуется
-          ln -s $CMD_TOOLS_DIR/latest $CMD_TOOLS_DIR/current
+          ln -s CMD_TOOLS_DIR/latest CMD_TOOLS_DIR/current
 
       - name: Accept Licenses & Install Build Tools
         run: |
-          SDK_ROOT=\$HOME/.buildozer/android/platform/android-sdk
-          CMD_TOOLS=\$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
+          SDK_ROOT=\HOME/.buildozer/android/platform/android-sdk
+          CMD_TOOLS=\SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
           
           # Принимаем все лицензии автоматически
-          echo "y" | \$CMD_TOOLS --licenses > /dev/null 2>&1
+          echo "y" | \CMD_TOOLS --licenses > /dev/null 2>&1
           
           # Устанавливаем необходимые компоненты
           \$CMD_TOOLS "build-tools;34.0.0" "platforms;android-33" "ndk;28.1.1" > /dev/null 2>&1
@@ -59,7 +59,7 @@ jobs:
         run: |
           # Отключаем автоматическую загрузку SDK внутри buildozer через переменную окружения или конфиг
           # Но проще всего просто запустить, так как мы уже создали структуру папок и положили туда sdkmanager
-          buildozer -v android debug
+          buildozer -v android debu
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
