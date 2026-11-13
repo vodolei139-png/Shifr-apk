@@ -39,7 +39,7 @@ jobs:
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
     
             - name: Patch pyjnius recipe (1.7.0 -> 1.8.0)
-        run: |
+         run: |
           P4A_DIR=$HOME/p4a-patched
           git clone --depth 1 https://github.com/kivy/python-for-android.git $P4A_DIR
           sed -i 's/1\.7\.0/1.8.0/g' $P4A_DIR/pythonforandroid/recipes/pyjnius/__init__.py
