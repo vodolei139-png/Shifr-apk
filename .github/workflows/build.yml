@@ -24,38 +24,26 @@ jobs:
       - name: Install Buildozer & Cython
         run: |
           pip install -U buildozer cython
-          
+
       - name: Clean old Buildozer cache
         run: |
           rm -rf ~/.buildozer .buildozer
 
-            - name: Prepare Android SDK (Cmdline Tools)
-         run: |
-          SDK_ROOT=\$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p \$SDK_ROOT
-          
-          # Скачиваем и распаковываем
+      - name: Prepare Android SDK (Cmdline Tools)
+        run: |
+          SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+          mkdir -p $SDK_ROOT
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip
           unzip -q /tmp/tools.zip -d /tmp/tools_extract
-          
-          # Кладем в современный путь (для наших команд лицензий)
-          mkdir -p \$SDK_ROOT/cmdline-tools
-          cp -r /tmp/tools_extract/cmdline-tools \$SDK_ROOT/cmdline-tools/latest
-          
-          # Кладем в старый путь (для Buildozer, который иначе падает)
-          cp -r /tmp/tools_extract/cmdline-tools \$SDK_ROOT/tools
+          cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
+          cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
 
       - name: Accept Licenses & Install Build Tools
         run: |
-          SDK_ROOT=\$HOME/.buildozer/android/platform/android-sdk
-          # Используем путь из cmdline-tools/latest — он свежий и правильный
-          CMD_TOOLS=\$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
-          
-          # Принимаем лицензии
-          yes | \$CMD_TOOLS --licenses > /dev/null 2>&1 || true
-          
-          # Ставим компоненты
-          \$CMD_TOOLS "build-tools;34.0.0" "platforms;android-33" "platform-tools" || true
+          SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+          CMD_TOOLS=$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
+          yes | $CMD_TOOLS --licenses > /dev/null 2>&1 || true
+          $CMD_TOOLS "build-tools;34.0.0" "platforms;android-33" "platform-tools" || true
 
       - name: Build APK with Buildozer
         run: |
