@@ -18,8 +18,7 @@ jobs:
 
       - name: Clean old Buildozer cache
         run: |
-          rm -rf ~/.buildozer
-          rm -rf .buildozer
+          rm -rf ~/.buildozer .buildozer
 
       - name: Install system dependencies
         run: |
@@ -34,25 +33,27 @@ jobs:
         run: |
           buildozer -v android debug || {
             echo "=== First attempt failed, applying fixes and retrying ==="
-
             SDK=$HOME/.buildozer/android/platform/android-sdk
-            mkdir -p $SDK/licenses
-            cat > $SDK/licenses/android-sdk-license << 'EOF'
-          8933bad161af4178b1185d1e37200b9d
-          d56f5187479451eabf01fb78af6dfcb131a6481e
-          24333f8a63b6825ea9c5514f83c2829b004d1fee
-          656503b63140fba2cfe9ca5fa3e8f94e8fbd93d2
-          EOF
-            SDKM=$(find $SDK -name sdkmanager -type f | head -1)
-            if [ -n "$SDKM" ]; then yes | $SDKM --licenses || true; fi
 
-            LIBFFI_AC=$(find ~/.buildozer -type f -path "*libffi*" -name "configure.ac" 2>/dev/null | head -1)
+            # 1) Свежие cmdline-tools в правильной структуре папок
+            if [ ! -x $SDK/cmdline-tools/latest/bin/sdkmanager ]; then
+              wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/clt.zip
+              rm -rf /tmp/clt
+              unzip -q /tmp/clt.zip -d /tmp/clt
+              mkdir -p $SDK/cmdline-tools/latest
+              mv /tmp/clt/cmdline-tools/* $SDK/cmdline-tools/latest/
+            fi
+
+            # 2) Принимаем лицензии рабочим sdkmanager
+            yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+
+            # 3) Ставим build-tools и platform напрямую
+            $SDK/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "build-tools;33.0.2" "platforms;android-33" || true
+
+            # 4) Чиним libffi, если её исходники уже скачаны
+            LIBFFI_AC=$(find ~/.buildozer -type f -path "*libffi*" -name configure.ac 2>/dev/null | head -1)
             if [ -n "$LIBFFI_AC" ]; then
-              FIXDIR=$(dirname "$LIBFFI_AC")
-              echo "Fixing libffi in $FIXDIR"
-              (cd "$FIXDIR" && libtoolize --copy --force && autoreconf -vfi) || true
-            else
-              echo "libffi sources not present yet, skipping autotools fix"
+              (cd "$(dirname "$LIBFFI_AC")" && libtoolize --copy --force && autoreconf -vfi) || true
             fi
 
             echo "=== Retrying build ==="
