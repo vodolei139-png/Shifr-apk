@@ -1,27 +1,22 @@
-   - name: Set up Python
-    uses: actions/setup-python@v5
-    with:
+- name: Set up Python
+  uses: actions/setup-python@v5
+  with:
       python-version: "3.11"
-
-   - name: Install system dependencies
-    run: |
-      sudo apt-get update
+- name: Install system dependencies
+  run: |
+     sudo apt-get update
       sudo apt-get install -y build-essential git python3 python3-dev openjdk-17-jdk unzip autoconf automake libtool libltdl-dev pkg-config libffi-dev zlib1g-dev
-
-   - name: Install Buildozer and Cython
-    run: |
+- name: Install Buildozer and Cython
+  run: |
       pip install -U buildozer cython
-
-   - name: Clean old Buildozer cache
-    run: |
+- name: Clean old Buildozer cache
+  run: |
       rm -rf ~/.buildozer .buildozer
-
-   - name: Patch pyjnius recipe
-    run: |
+- name: Patch pyjnius recipe
+  run: |
       git clone --depth 1 https://github.com/kivy/python-for-android.git /home/runner/p4a-patched
       python3 -c "import pathlib; p = pathlib.Path('/home/runner/p4a-patched/pythonforandroid/recipes/pyjnius/__init__.py'); s = p.read_text(); p.write_text(s.replace('1.7.0', '1.8.0')); print('patched:', '1.8.0' in p.read_text())"
-
-   - name: Prepare Android SDK (Cmdline Tools)
-    run: |
-      SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
-      mkdir -p 
+- name: Prepare Android SDK (Cmdline Tools)
+  run: |
+       SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
+           mkdir -p 
