@@ -38,12 +38,12 @@ jobs:
           mkdir -p /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
 
-      - name: Accept Licenses & Install Build Tools
-        run: |
+            - name: Accept Licenses & Install Build Tools
+         run: |
           SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
           CMD_TOOLS=$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
-          yes | $CMD_TOOLS --licenses > /dev/null 2>&1 || true
-          $CMD_TOOLS "build-tools;34.0.0" "platforms;android-33" "platform-tools" || true
+          yes | $CMD_TOOLS --licenses
+          $CMD_TOOLS "build-tools;34.0.0" "platforms;android-33" "platform-tools"
 
       - name: Build APK with Buildozer
         run: |
