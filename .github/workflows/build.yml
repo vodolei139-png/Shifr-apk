@@ -28,7 +28,6 @@ jobs:
       - name: Clean old Buildozer cache
         run: |
           rm -rf ~/.buildozer .buildozer
-
       - name: Prepare Android SDK (Cmdline Tools)
         run: |
           SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
