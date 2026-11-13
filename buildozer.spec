@@ -15,6 +15,7 @@ android.ndk = 25b
 android.build_tools_version = 33.0.2
 android.accept_sdk_license = True
 android.arch = arm64-v8a
+p4a.source_dir = ~/p4a-patched
 
 [buildozer]
 log_level = 2
