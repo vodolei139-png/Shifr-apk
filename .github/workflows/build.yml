@@ -30,37 +30,34 @@ jobs:
         run: |
           pip install -U buildozer cython virtualenv
 
-      - name: Build APK (attempt 1 - installs SDK and NDK)
-        run: buildozer -v android debug || true
-
-      - name: Accept ALL Android SDK licenses
+      - name: Build APK with self-healing
         run: |
-          SDK=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK/licenses
-          cat > $SDK/licenses/android-sdk-license << 'EOF'
+          buildozer -v android debug || {
+            echo "=== First attempt failed, applying fixes and retrying ==="
+
+            SDK=$HOME/.buildozer/android/platform/android-sdk
+            mkdir -p $SDK/licenses
+            cat > $SDK/licenses/android-sdk-license << 'EOF'
           8933bad161af4178b1185d1e37200b9d
           d56f5187479451eabf01fb78af6dfcb131a6481e
           24333f8a63b6825ea9c5514f83c2829b004d1fee
           656503b63140fba2cfe9ca5fa3e8f94e8fbd93d2
           EOF
-          SDKM=$(find $SDK -name sdkmanager -type f | head -1)
-          if [ -n "$SDKM" ]; then yes | $SDKM --licenses || true; fi
+            SDKM=$(find $SDK -name sdkmanager -type f | head -1)
+            if [ -n "$SDKM" ]; then yes | $SDKM --licenses || true; fi
 
-      - name: Fix Autotools / Libtool issue for libffi
-        run: |
-          LIBFFI_DIR=$(find ~/.buildozer -type f -path "*other_builds*libffi*" -name "configure.ac" | head -1 | xargs dirname)
-          if [ -n "$LIBFFI_DIR" ]; then
-            echo "Fixing libffi in: $LIBFFI_DIR"
-            cd "$LIBFFI_DIR"
-            libtoolize --force --copy
-            autoreconf -vfi
-            echo "Libffi fixed."
-          else
-            echo "Libffi source not found, skipping fix."
-          fi
+            LIBFFI_AC=$(find ~/.buildozer -type f -path "*libffi*" -name "configure.ac" 2>/dev/null | head -1)
+            if [ -n "$LIBFFI_AC" ]; then
+              FIXDIR=$(dirname "$LIBFFI_AC")
+              echo "Fixing libffi in $FIXDIR"
+              (cd "$FIXDIR" && libtoolize --copy --force && autoreconf -vfi) || true
+            else
+              echo "libffi sources not present yet, skipping autotools fix"
+            fi
 
-      - name: Build APK (final)
-        run: buildozer -v android debug
+            echo "=== Retrying build ==="
+            buildozer -v android debug
+          }
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
