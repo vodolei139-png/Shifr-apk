@@ -43,11 +43,13 @@ jobs:
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
           cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
 
-      - name: Accept Licenses and Install Build Tools
-        run: |
-          SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
-          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
-          $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-33" "platform-tools"
+            - name: Accept Licenses and Install Build Tools
+          run: |
+          SDKM=/home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | $SDKM --licenses
+          $SDKM build-tools\;34.0.0
+          $SDKM platforms\;android-33
+          $SDKM platform-tools
 
             - name: Fix buildozer.spec
             run: |
