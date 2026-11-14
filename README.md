@@ -34,3 +34,6 @@
 - `main.py` — всё приложение;
 - `buildozer.spec` — конфигурация сборки;
 - `.github/workflows/build.yml` — автосборка.
+## Скриншот
+
+- скриншот.png
