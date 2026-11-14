@@ -19,7 +19,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git python3 python3-dev openjdk-17-jdk unzip autoconf automake libtool libltdl-dev pkg-config libffi-dev zlib1g-dev
+          sudo apt-get install -y build-essential git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libffi-dev libssl-dev
 
       - name: Install Buildozer and Cython
         run: |
@@ -34,33 +34,17 @@ jobs:
           git clone --depth 1 https://github.com/kivy/python-for-android.git /home/runner/p4a-patched
           python3 -c "import pathlib; p = pathlib.Path('/home/runner/p4a-patched/pythonforandroid/recipes/pyjnius/__init__.py'); s = p.read_text(); p.write_text(s.replace('1.7.0', '1.8.0')); print('patched:', '1.8.0' in p.read_text())"
 
-      - name: Prepare Android SDK (Cmdline Tools)
+      - name: Fix buildozer.spec
         run: |
-          SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK_ROOT/cmdline-tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip
-          unzip -q /tmp/tools.zip -d /tmp/tools_extract
-          cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/cmdline-tools/latest
-          cp -r /tmp/tools_extract/cmdline-tools $SDK_ROOT/tools
-
-            - name: Accept Licenses and Install Build Tools
-          run: |
-          SDKM=/home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager
-          yes | $SDKM --licenses
-          $SDKM build-tools\;34.0.0
-          $SDKM platforms\;android-33
-          $SDKM platform-tools
-
-            - name: Fix buildozer.spec
-            run: |
           python3 << 'EOF'
           import re, pathlib
           p = pathlib.Path('buildozer.spec')
           s = p.read_text()
           s = re.sub(r'(?m)^\s*#?\s*android\.arch.*\n', '', s)
           s = re.sub(r'(?m)^\s*#?\s*p4a\.source_dir.*\n', '', s)
+          s = re.sub(r'(?m)^\s*#?\s*android\.accept_sdk_license.*\n', '', s)
           s = re.sub(r'(?m)^$$android$$\s*\n', '', s)
-          s = s.replace('[app]', '[app]\nandroid.archs = arm64-v8a\np4a.source_dir = ~/p4a-patched', 1)
+          s = s.replace('[app]', '[app]\nandroid.archs = arm64-v8a\nandroid.accept_sdk_license = True\np4a.source_dir = /home/runner/p4a-patched', 1)
           p.write_text(s)
           print(s)
           EOF
