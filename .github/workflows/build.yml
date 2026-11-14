@@ -31,14 +31,12 @@ jobs:
 
       - name: Patch pyjnius recipe
         run: |
-          P4A_DIR=$HOME/p4a-patched
-          git clone --depth 1 https://github.com/kivy/python-for-android.git $P4A_DIR
-          sed -i 's/1\.7\.0/1.8.0/g' $P4A_DIR/pythonforandroid/recipes/pyjnius/__init__.py
-          grep -c "1.8.0" $P4A_DIR/pythonforandroid/recipes/pyjnius/__init__.py || echo "WARNING: patch target not found"
+          git clone --depth 1 https://github.com/kivy/python-for-android.git /home/runner/p4a-patched
+          python3 -c "import pathlib; p = pathlib.Path('/home/runner/p4a-patched/pythonforandroid/recipes/pyjnius/__init__.py'); s = p.read_text(); p.write_text(s.replace('1.7.0', '1.8.0')); print('patched:', '1.8.0' in p.read_text())"
 
       - name: Prepare Android SDK (Cmdline Tools)
         run: |
-          SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+          SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
           mkdir -p $SDK_ROOT/cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip
           unzip -q /tmp/tools.zip -d /tmp/tools_extract
@@ -47,19 +45,25 @@ jobs:
 
       - name: Accept Licenses and Install Build Tools
         run: |
-          SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-          CMD_TOOLS=$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
-          yes | $CMD_TOOLS --licenses
-          $CMD_TOOLS "build-tools;34.0.0" "platforms;android-33" "platform-tools"
+          SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
+          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+          $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-33" "platform-tools"
 
-      - name: Force single arch in buildozer.spec
+      - name: Fix buildozer.spec
         run: |
-          sed -i '/^android\.arch/d' buildozer.spec
-          sed -i '/^$$android$$/a android.archs = arm64-v8a' buildozer.spec
-          sed -i '/^p4a\.source_dir/d' buildozer.spec
-          sed -i '/^orientation = portrait/a p4a.source_dir = ~/p4a-patched' buildozer.spec
-          echo "--- spec check ---"
-          grep -nE "android\.archs|p4a\.source_dir" buildozer.spec
+          python3 << 'EOF'
+          import re, pathlib
+          p = pathlib.Path('buildozer.spec')
+          s = p.read_text()
+          s = re.sub(r'(?m)^\s*#?\s*android\.arch.*\n', '', s)
+          s = re.sub(r'(?m)^\s*#?\s*p4a\.source_dir.*\n', '', s)
+          s = s.replace('[android]', '[android]\nandroid.archs = arm64-v8a', 1)
+          s = s.replace('[app]', '[app]\np4a.source_dir = ~/p4a-patched', 1)
+          p.write_text(s)
+          for line in s.splitlines():
+              if 'arch' in line or 'p4a' in line:
+                  print(line)
+          EOF
 
       - name: Build APK with Buildozer
         run: |
