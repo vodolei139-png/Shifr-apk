@@ -20,10 +20,10 @@ class ShifrApp(App):
     def build(self):
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
         self.txt_input = TextInput(hint_text="Текст", multiline=True)
-        self.txt_shift = TextInput(hint_text="Сдвиг", input_filter='int')
-        self.txt_mode = TextInput(hint_text="ш или р")
+        self.txt_shift = TextInput(hint_text="Сдвиг (число)", input_filter='int')
+        self.txt_mode = TextInput(hint_text="ш — зашифровать, р — расшифровать")
         self.btn = Button(text="Готово", on_press=self.process)
-        self.lbl_out = Label(text="Результат появится здесь")
+        self.lbl_out = Label(text="Результат появится здесь", font_size=32)
         for widget in (self.txt_input, self.txt_shift, self.txt_mode, self.btn, self.lbl_out):
             layout.add_widget(widget)
         return layout
