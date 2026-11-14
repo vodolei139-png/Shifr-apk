@@ -53,7 +53,20 @@ jobs:
         run: |
           export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
           buildozer -v android debug
-      - name: Upload Artifact
+      -       - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: apk-package
+          path: bin/*.apk
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          files: bin/*.apk
+          tag_name: v1.0.${{ github.run_number }}
+        name: Upload Artifact
         uses: actions/upload-artifact@v4
         if: success()
         with:
