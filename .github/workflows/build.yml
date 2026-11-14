@@ -19,7 +19,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libffi-dev libssl-dev
+          sudo apt-get install -y build-essential git zip unzip autoconf automake libtool libltdl-dev pkg-config zlib1g-dev libffi-dev libssl-dev openjdk-17-jdk
 
       - name: Install Buildozer and Cython
         run: |
@@ -51,8 +51,8 @@ jobs:
 
       - name: Build APK with Buildozer
         run: |
+          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
           buildozer -v android debug
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         if: success()
