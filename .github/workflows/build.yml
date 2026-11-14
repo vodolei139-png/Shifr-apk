@@ -49,20 +49,18 @@ jobs:
           yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
           $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-33" "platform-tools"
 
-      - name: Fix buildozer.spec
-        run: |
+            - name: Fix buildozer.spec
+            run: |
           python3 << 'EOF'
           import re, pathlib
           p = pathlib.Path('buildozer.spec')
           s = p.read_text()
           s = re.sub(r'(?m)^\s*#?\s*android\.arch.*\n', '', s)
           s = re.sub(r'(?m)^\s*#?\s*p4a\.source_dir.*\n', '', s)
-          s = s.replace('[android]', '[android]\nandroid.archs = arm64-v8a', 1)
-          s = s.replace('[app]', '[app]\np4a.source_dir = ~/p4a-patched', 1)
+          s = re.sub(r'(?m)^$$android$$\s*\n', '', s)
+          s = s.replace('[app]', '[app]\nandroid.archs = arm64-v8a\np4a.source_dir = ~/p4a-patched', 1)
           p.write_text(s)
-          for line in s.splitlines():
-              if 'arch' in line or 'p4a' in line:
-                  print(line)
+          print(s)
           EOF
 
       - name: Build APK with Buildozer
