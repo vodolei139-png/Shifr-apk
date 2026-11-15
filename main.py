@@ -4,6 +4,7 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.label import Label
 
+
 def sdvig(text, k, napravlenie):
     alfavit = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
     resultat = ""
@@ -16,6 +17,24 @@ def sdvig(text, k, napravlenie):
             resultat += bukva
     return resultat
 
+
+def podelitjsya(text):
+    """Открывает системное меню «Поделиться» (только на Android)."""
+    from jnius import autoclass
+    Intent = autoclass("android.content.Intent")
+    PythonActivity = autoclass("org.kivy.android.PythonActivity")
+    String = autoclass("java.lang.String")
+
+    intent = Intent()
+    intent.setAction(Intent.ACTION_SEND)
+    intent.setType("text/plain")
+    intent.putExtra(Intent.EXTRA_TEXT, String(text))
+    currentActivity = PythonActivity.mActivity
+    currentActivity.startActivity(
+        Intent.createChooser(intent, String("Куда отправить"))
+    )
+
+
 class ShifrApp(App):
     def build(self):
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
@@ -23,52 +42,41 @@ class ShifrApp(App):
         self.txt_shift = TextInput(hint_text="Сдвиг (число)", input_filter='int')
         self.txt_mode = TextInput(hint_text="ш — зашифровать, р — расшифровать")
         self.btn = Button(text="Готово", on_press=self.process)
-        self.lbl_out = Label(text="Результат появится здесь", font_size=32)
-        for widget in (self.txt_input, self.txt_shift, self.txt_mode, self.btn, self.lbl_out):
+        self.btn_share = Button(text="Поделиться", on_press=self.share)
+        self.lbl_out = Label(text="Результат появится здесь", font_size=28)
+        for widget in (self.txt_input, self.txt_shift, self.txt_mode,
+                       self.btn, self.btn_share, self.lbl_out):
             layout.add_widget(widget)
         return layout
 
     def process(self, instance):
         try:
             k = int(self.txt_shift.text)
-            import os
-
-class ShifrApp(App):
-    def build(self):
-        # ... существующие виджеты ...
-        row = BoxLayout()
-        self.btn_save = Button(text="Сохранить", on_press=self.save)
-        self.btn_load = Button(text="Загрузить", on_press=self.load)
-        row.add_widget(self.btn_load)
-        row.add_widget(self.btn_save)
-        layout.add_widget(row)   # добавить до lbl_out
-
-    def get_path(self, name):
-        # собственная папка приложения на Android (или на компьютере)
-        return os.path.join(self.user_data_dir, name)
-
-    def save(self, instance):
-        if not self.txt_input.text.strip():
-            self.lbl_out.text = "Нечего сохранять"
-            return
-        with open(self.get_path("shifr_save.txt"), "w", encoding="utf-8") as f:
-            f.write(self.txt_input.text + "\n---\n" + self.lbl_out.text)
-        self.lbl_out.text = "Сохранено в shifr_save.txt"
-
-    def load(self, instance):
-        try:
-            with open(self.get_path("shifr_save.txt"), "r", encoding="utf-8") as f:
-                text, result = f.read().split("\n---\n", 1)
-        except FileNotFoundError:
-            self.lbl_out.text = "Сохранений пока нет"
-            return
-        except ValueError:
-            text, result = f.read(), ""
-        self.txt_input.text = text
-        self.lbl_out.text = result or "Загружено"
-
             self.lbl_out.text = sdvig(self.txt_input.text, k, self.txt_mode.text.strip())
         except ValueError:
             self.lbl_out.text = "Ошибка: сдвиг должен быть числом"
+
+    def share(self, instance):
+        # Берём то, что есть: результат шифрования или просто исходный текст
+        result = self.lbl_out.text
+        text = self.txt_input.text
+        if result == "Результат появится здесь":
+            payload = text if text.strip() else ""
+        elif result.startswith("Ошибка"):
+            self.lbl_out.text = "Сначала зашифруйте текст"
+            return
+        else:
+            payload = "Текст: " + text + "\nРезультат: " + result
+
+        if not payload:
+            self.lbl_out.text = "Нечего отправлять"
+            return
+
+        try:
+            podelitjsya(payload)
+        except ImportError:
+            # На компьютере jnius нет — покажем текст как заглушку
+            self.lbl_out.text = "Поделиться работает только на Android"
+
 
 ShifrApp().run()
