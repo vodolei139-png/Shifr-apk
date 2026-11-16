@@ -292,7 +292,7 @@ class ShifrApp(App):
         intent.putExtra(Intent.EXTRA_TITLE, String('shifr_result.txt'))
         currentActivity.startActivityForResult(intent, REQUEST_SAVE)
 
-        def on_activity_result(self, request_code, result_code, data):
+    def on_activity_result(self, request_code, result_code, data):
         if data is None:
             return
         uri = data.getData()
