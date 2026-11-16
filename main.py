@@ -66,6 +66,8 @@ class ShifrApp(App):
         self.btn_open = Button(text='Открыть файл', on_press=self.open_file)
         self.btn_save = Button(text='Сохранить файл', on_press=self.save_file)
         self.lbl_out = Label(text='Результат появится здесь', font_size=28)
+
+        # Автоподсчёт: как только все три поля заполнены — считаем сами
         self.txt_input.bind(text=self.try_auto)
         self.txt_shift.bind(text=self.try_auto)
         self.txt_mode.bind(text=self.try_auto)
@@ -87,6 +89,7 @@ class ShifrApp(App):
         mode = self.txt_mode.text.strip().lower()
         if text and shift_text and mode in ('ш', 'р'):
             self.process(None)
+
     # Обработка текста: шифрование или расшифрование
     def process(self, instance):
         text = self.txt_input.text
