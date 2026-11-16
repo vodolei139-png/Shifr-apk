@@ -1,82 +1,185 @@
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
 from kivy.uix.label import Label
 
+from jnius import autoclass
 
-def sdvig(text, k, napravlenie):
-    alfavit = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
-    resultat = ""
-    for bukva in text:
-        if bukva.isalpha() and bukva.lower() in alfavit:
-            nomer = alfavit.index(bukva.lower())
-            noviy = alfavit[(nomer + k) % 33] if napravlenie == "ш" else alfavit[(nomer - k) % 33]
-            resultat += noviy.upper() if bukva.isupper() else noviy
+try:
+    from android import activity as android_activity
+except ImportError:
+    android_activity = None
+
+Intent = autoclass('android.content.Intent')
+String = autoclass('java.lang.String')
+PythonActivity = autoclass('org.kivy.android.PythonActivity')
+BufferedReader = autoclass('java.io.BufferedReader')
+InputStreamReader = autoclass('java.io.InputStreamReader')
+OutputStreamWriter = autoclass('java.io.OutputStreamWriter')
+
+currentActivity = PythonActivity.mActivity
+
+REQUEST_OPEN = 1001
+REQUEST_SAVE = 1002
+
+
+# Шифр Цезаря: русские и латинские буквы, регистр сохраняется,
+# пробелы, цифры и знаки не трогаем
+def sdvig(text, shift):
+    rus_lower = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+    rus_upper = rus_lower.upper()
+    latin_lower = 'abcdefghijklmnopqrstuvwxyz'
+    latin_upper = latin_lower.upper()
+
+    result = []
+    for ch in text:
+        for alphabet in (rus_lower, rus_upper, latin_lower, latin_upper):
+            if ch in alphabet:
+                size = len(rus_lower) if alphabet in (rus_lower, rus_upper) else len(latin_lower)
+                idx = (alphabet.index(ch) + shift) % size
+                result.append(alphabet[idx])
+                break
         else:
-            resultat += bukva
-    return resultat
+            result.append(ch)
+    return ''.join(result)
 
 
-def podelitjsya(text):
-    """Открывает системное меню «Поделиться» (только на Android)."""
-    from jnius import autoclass
-    Intent = autoclass("android.content.Intent")
-    PythonActivity = autoclass("org.kivy.android.PythonActivity")
-    String = autoclass("java.lang.String")
-
+# Поделиться через системное меню
+def podelitsya(text):
     intent = Intent()
     intent.setAction(Intent.ACTION_SEND)
-    intent.setType("text/plain")
+    intent.setType('text/plain')
     intent.putExtra(Intent.EXTRA_TEXT, String(text))
-    currentActivity = PythonActivity.mActivity
     currentActivity.startActivity(
-        Intent.createChooser(intent, String("Куда отправить"))
-    )
+        Intent.createChooser(intent, String('Куда отправить')))
 
 
 class ShifrApp(App):
     def build(self):
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        self.txt_input = TextInput(hint_text="Текст", multiline=True)
-        self.txt_shift = TextInput(hint_text="Сдвиг (число)", input_filter='int')
-        self.txt_mode = TextInput(hint_text="ш — зашифровать, р — расшифровать")
-        self.btn = Button(text="Готово", on_press=self.process)
-        self.btn_share = Button(text="Поделиться", on_press=self.share)
-        self.lbl_out = Label(text="Результат появится здесь", font_size=28)
+        self.txt_input = TextInput(hint_text='Текст', multiline=True)
+        self.txt_shift = TextInput(hint_text='Сдвиг (число)', font_size=20)
+        self.txt_mode = TextInput(hint_text='ш — зашифровать, р — расшифровать')
+        self.btn = Button(text='Готово', on_press=self.process)
+        self.btn_share = Button(text='Поделиться', on_press=self.share)
+        self.btn_open = Button(text='Открыть файл', on_press=self.open_file)
+        self.btn_save = Button(text='Сохранить файл', on_press=self.save_file)
+        self.lbl_out = Label(text='Результат появится здесь', font_size=28)
+        self.txt_input.bind(text=self.try_auto)
+        self.txt_shift.bind(text=self.try_auto)
+        self.txt_mode.bind(text=self.try_auto)
+
         for widget in (self.txt_input, self.txt_shift, self.txt_mode,
-                       self.btn, self.btn_share, self.lbl_out):
+                       self.btn, self.btn_share, self.btn_open,
+                       self.btn_save, self.lbl_out):
             layout.add_widget(widget)
         return layout
 
+    def on_start(self):
+        if android_activity is not None:
+            android_activity.bind(on_activity_result=self.on_activity_result)
+
+    # Автоматический подсчёт, когда заполнены все три поля
+    def try_auto(self, instance, value):
+        text = self.txt_input.text
+        shift_text = self.txt_shift.text
+        mode = self.txt_mode.text.strip().lower()
+        if text and shift_text and mode in ('ш', 'р'):
+            self.process(None)
+    # Обработка текста: шифрование или расшифрование
     def process(self, instance):
+        text = self.txt_input.text
+        if not text:
+            self.lbl_out.text = 'Введите текст'
+            return
         try:
-            k = int(self.txt_shift.text)
-            self.lbl_out.text = sdvig(self.txt_input.text, k, self.txt_mode.text.strip())
+            shift = int(self.txt_shift.text)
         except ValueError:
-            self.lbl_out.text = "Ошибка: сдвиг должен быть числом"
+            self.lbl_out.text = 'Введите число-сдвиг'
+            return
+        mode = self.txt_mode.text.strip().lower()
+        if mode == 'ш':
+            real_shift = shift
+        elif mode == 'р':
+            real_shift = -shift
+        else:
+            self.lbl_out.text = 'Введите ш или р'
+            return
+        self.lbl_out.text = sdvig(text, real_shift)
 
     def share(self, instance):
-        # Берём то, что есть: результат шифрования или просто исходный текст
-        result = self.lbl_out.text
-        text = self.txt_input.text
-        if result == "Результат появится здесь":
-            payload = text if text.strip() else ""
-        elif result.startswith("Ошибка"):
-            self.lbl_out.text = "Сначала зашифруйте текст"
+        text = self.lbl_out.text
+        if text == 'Результат появится здесь':
+            self.lbl_out.text = 'Сначала получите результат'
             return
-        else:
-            payload = "Текст: " + text + "\nРезультат: " + result
+        podelitsya(text)
 
-        if not payload:
-            self.lbl_out.text = "Нечего отправлять"
+    # Открытие файла через системный выбор
+    def open_file(self, instance):
+        if android_activity is None:
+            self.lbl_out.text = 'Файлы работают только на Android'
             return
+        intent = Intent()
+        intent.setAction(Intent.ACTION_OPEN_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType('*/*')
+        currentActivity.startActivityForResult(intent, REQUEST_OPEN)
 
+    # Сохранение результата через системный диалог
+    def save_file(self, instance):
+        if android_activity is None:
+            self.lbl_out.text = 'Файлы работают только на Android'
+            return
+        text = self.lbl_out.text
+        if text == 'Результат появится здесь':
+            self.lbl_out.text = 'Сначала получите результат'
+            return
+        intent = Intent()
+        intent.setAction(Intent.ACTION_CREATE_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType('text/plain')
+        intent.putExtra(Intent.EXTRA_TITLE, String('shifr_result.txt'))
+        currentActivity.startActivityForResult(intent, REQUEST_SAVE)
+
+    # Приём результата системных диалогов
+    def on_activity_result(self, request_code, result_code, data):
+        if data is None:
+            return
+        if request_code == REQUEST_OPEN and result_code == -1:
+            self.load_text_from_uri(data.getData())
+        elif request_code == REQUEST_SAVE and result_code == -1:
+            self.save_text_to_uri(data.getData())
+
+    # Чтение файла: UTF-8, чтобы русский текст не ломался
+    def load_text_from_uri(self, uri):
         try:
-            podelitjsya(payload)
-        except ImportError:
-            # На компьютере jnius нет — покажем текст как заглушку
-            self.lbl_out.text = "Поделиться работает только на Android"
+            stream = currentActivity.getContentResolver().openInputStream(uri)
+            reader = BufferedReader(InputStreamReader(stream, 'UTF-8'))
+            lines = []
+            while True:
+                line = reader.readLine()
+                if line is None:
+                    break
+                lines.append(line)
+            reader.close()
+            self.txt_input.text = '\n'.join(lines)
+            self.lbl_out.text = 'Файл загружен'
+        except Exception as e:
+            self.lbl_out.text = 'Ошибка чтения: ' + str(e)
+
+    # Запись результата в файл: тоже UTF-8
+    def save_text_to_uri(self, uri):
+        try:
+            stream = currentActivity.getContentResolver().openOutputStream(uri)
+            writer = OutputStreamWriter(stream, 'UTF-8')
+            writer.write(self.lbl_out.text)
+            writer.flush()
+            writer.close()
+            self.lbl_out.text = 'Файл сохранён'
+        except Exception as e:
+            self.lbl_out.text = 'Ошибка сохранения: ' + str(e)
 
 
-ShifrApp().run()
+if __name__ == '__main__':
+    ShifrApp().run()
