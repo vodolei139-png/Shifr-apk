@@ -10,7 +10,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle, Line, Ellipse, RoundedRectangle
 from kivy.clock import Clock
-
+from kivy.core.window import Window
 from jnius import autoclass
 
 try:
@@ -324,7 +324,7 @@ class ShifrApp(App):
             self.lbl_out.text = 'Файл сохранён'
         except Exception as e:
             self.lbl_out.text = 'Ошибка сохранения: ' + str(e)
-
+            Clock.schedule_once(lambda dt: Window.canvas.ask_update(), 0.2)
 
 def sdvig(text, shift):
     rus_lower = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
@@ -352,7 +352,6 @@ def podelitsya(text):
     intent.putExtra(Intent.EXTRA_TEXT, String(text))
     currentActivity.startActivity(
         Intent.createChooser(intent, String('Куда отправить')))
-
 
 if __name__ == '__main__':
     ShifrApp().run()
