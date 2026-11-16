@@ -13,7 +13,7 @@
 
 | Главный экран | Работа с файлами |
 |---|---|
-| ![Главный экран](screenshots/main.png) | ![Файлы](screenshots/et_preview_url (1).png) |
+| ![Главный экран](screenshots/main.png) | ![Файлы](D:\Recovered_Projects\Новая папка/et_preview_url (1).png) |
 
 ## Установка
 
