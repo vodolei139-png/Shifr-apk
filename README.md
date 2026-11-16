@@ -13,7 +13,7 @@
 
 | Главный экран | Работа с файлами |
 |---|---|
-| ![Главный экран](screenshots/main.png) | ![Файлы](screenshots/files.png) |
+| ![Главный экран](screenshots/main.png) | ![Файлы](screenshots/et_preview_url (1).png) |
 
 ## Установка
 
