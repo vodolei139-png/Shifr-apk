@@ -1,4 +1,4 @@
-![Скриншот Shifr](et_preview_url.png)
+![Скриншот Shifr](et_preview_url.jpeg)
 
 # Shifr
 
