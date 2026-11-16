@@ -1,4 +1,5 @@
 from kivy.app import App
+from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
@@ -17,6 +18,9 @@ PythonActivity = autoclass('org.kivy.android.PythonActivity')
 BufferedReader = autoclass('java.io.BufferedReader')
 InputStreamReader = autoclass('java.io.InputStreamReader')
 OutputStreamWriter = autoclass('java.io.OutputStreamWriter')
+
+# Клавиатура не должна перекрывать поле, по которому тапнули
+Window.softinput_mode = 'below_target'
 
 currentActivity = PythonActivity.mActivity
 
@@ -57,23 +61,31 @@ def podelitsya(text):
 
 class ShifrApp(App):
     def build(self):
+        self.shift_value = 3  # стартовый сдвиг
+
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        self.txt_input = TextInput(hint_text='Текст', multiline=True)
-        self.txt_shift = TextInput(hint_text='Сдвиг (число)', font_size=20)
-        self.txt_mode = TextInput(hint_text='ш — зашифровать, р — расшифровать')
-        self.btn = Button(text='Готово', on_press=self.process)
+        self.txt_input = TextInput(hint_text='Текст', multiline=True,
+                                   write_tab=False)
+        self.lbl_shift = Label(text='Сдвиг: 3', font_size=24)
+        row = BoxLayout(orientation='horizontal', spacing=10)
+        self.btn_minus = Button(text='−', font_size=32,
+                                on_press=self.decrease)
+        self.btn_plus = Button(text='+', font_size=32,
+                               on_press=self.increase)
+        row.add_widget(self.btn_minus)
+        row.add_widget(self.btn_plus)
+        self.btn_enc = Button(text='Зашифровать (ш)',
+                              on_press=lambda instance: self.process('ш'))
+        self.btn_dec = Button(text='Расшифровать (р)',
+                              on_press=lambda instance: self.process('р'))
         self.btn_share = Button(text='Поделиться', on_press=self.share)
         self.btn_open = Button(text='Открыть файл', on_press=self.open_file)
         self.btn_save = Button(text='Сохранить файл', on_press=self.save_file)
         self.lbl_out = Label(text='Результат появится здесь', font_size=28)
 
-        # Автоподсчёт: как только все три поля заполнены — считаем сами
-        self.txt_input.bind(text=self.try_auto)
-        self.txt_shift.bind(text=self.try_auto)
-        self.txt_mode.bind(text=self.try_auto)
-
-        for widget in (self.txt_input, self.txt_shift, self.txt_mode,
-                       self.btn, self.btn_share, self.btn_open,
+        for widget in (self.txt_input, self.lbl_shift, row,
+                       self.btn_enc, self.btn_dec,
+                       self.btn_share, self.btn_open,
                        self.btn_save, self.lbl_out):
             layout.add_widget(widget)
         return layout
@@ -82,34 +94,31 @@ class ShifrApp(App):
         if android_activity is not None:
             android_activity.bind(on_activity_result=self.on_activity_result)
 
-    # Автоматический подсчёт, когда заполнены все три поля
-    def try_auto(self, instance, value):
-        text = self.txt_input.text
-        shift_text = self.txt_shift.text
-        mode = self.txt_mode.text.strip().lower()
-        if text and shift_text and mode in ('ш', 'р'):
-            self.process(None)
+    def decrease(self, instance):
+        if self.shift_value > 1:
+            self.shift_value -= 1
+        self.lbl_shift.text = 'Сдвиг: ' + str(self.shift_value)
+        self.recount()
+
+    def increase(self, instance):
+        if self.shift_value < 33:
+            self.shift_value += 1
+        self.lbl_shift.text = 'Сдвиг: ' + str(self.shift_value)
+        self.recount()
+
+    # Пересчёт на лету, если текст уже введён
+    def recount(self):
+        if self.txt_input.text:
+            self.lbl_out.text = sdvig(self.txt_input.text, self.shift_value)
 
     # Обработка текста: шифрование или расшифрование
-    def process(self, instance):
+    def process(self, mode):
         text = self.txt_input.text
         if not text:
             self.lbl_out.text = 'Введите текст'
             return
-        try:
-            shift = int(self.txt_shift.text)
-        except ValueError:
-            self.lbl_out.text = 'Введите число-сдвиг'
-            return
-        mode = self.txt_mode.text.strip().lower()
-        if mode == 'ш':
-            real_shift = shift
-        elif mode == 'р':
-            real_shift = -shift
-        else:
-            self.lbl_out.text = 'Введите ш или р'
-            return
-        self.lbl_out.text = sdvig(text, real_shift)
+        shift = self.shift_value if mode == 'ш' else -self.shift_value
+        self.lbl_out.text = sdvig(text, shift)
 
     def share(self, instance):
         text = self.lbl_out.text
