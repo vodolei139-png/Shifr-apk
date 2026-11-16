@@ -47,6 +47,7 @@ class WoodButton(Button):
         super().__init__(**kw)
         self.background_normal = ''
         self.background_down = ''
+        self.background_color = (0, 0, 0, 0)
         self.bold = True
         self.color = SCARLET
         self._radius = dp(24)
