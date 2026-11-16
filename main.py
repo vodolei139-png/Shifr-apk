@@ -1,7 +1,6 @@
 import traceback
 
 from kivy.app import App
-from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -275,6 +274,9 @@ class ShifrApp(App):
         intent.setType('*/*')
         currentActivity.startActivityForResult(intent, REQUEST_OPEN)
 
+    def on_resume(self):
+        Clock.schedule_once(lambda dt: Window.canvas.ask_update(), 0.3)
+
     def save_file(self, instance):
         if android_activity is None:
             self.lbl_out.text = 'Файлы работают только на Android'
@@ -290,13 +292,14 @@ class ShifrApp(App):
         intent.putExtra(Intent.EXTRA_TITLE, String('shifr_result.txt'))
         currentActivity.startActivityForResult(intent, REQUEST_SAVE)
 
-    def on_activity_result(self, request_code, result_code, data):
+        def on_activity_result(self, request_code, result_code, data):
         if data is None:
             return
+        uri = data.getData()
         if request_code == REQUEST_OPEN and result_code == -1:
-            self.load_text_from_uri(data.getData())
+            Clock.schedule_once(lambda dt: self.load_text_from_uri(uri), 0)
         elif request_code == REQUEST_SAVE and result_code == -1:
-            self.save_text_to_uri(data.getData())
+            Clock.schedule_once(lambda dt: self.save_text_to_uri(uri), 0)
 
     def load_text_from_uri(self, uri):
         try:
@@ -324,8 +327,7 @@ class ShifrApp(App):
             self.lbl_out.text = 'Файл сохранён'
         except Exception as e:
             self.lbl_out.text = 'Ошибка сохранения: ' + str(e)
-            Clock.schedule_once(lambda dt: Window.canvas.ask_update(), 0.2)
-
+            
 def sdvig(text, shift):
     rus_lower = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
     rus_upper = rus_lower.upper()
